@@ -1,11 +1,8 @@
 /**
  * @name LPM
- * @invite undefined
- * @authorLink undefined
- * @donate undefined
- * @patreon undefined
- * @website 
- * @source 
+ * @authorLink https://twitter.com/WingCanTalk
+ * @website https://wingio.xyz
+ * @source https://github.com/wingio/LPM
  */
 /*@cc_on
 @if (@_jscript)
