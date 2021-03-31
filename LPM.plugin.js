@@ -5,7 +5,7 @@
  * @donate undefined
  * @patreon undefined
  * @website https://github.com/wingio/LPM
- * @source 
+ * @source https://raw.githubusercontent.com/wingio/LPM/main/LPM.plugin.js
  */
 /*@cc_on
 @if (@_jscript)
@@ -32,7 +32,7 @@
 @else@*/
 
 module.exports = (() => {
-    const config = {"info":{"name":"Link Previewer for Messages","authors":[{"name":"Wing","discord_id":"298295889720770563","github_username":"wingio","twitter_username":"WingCanTalk"}],"version":"0.1.0","description":"Adds a preview for messages containging a message link","github":"https://github.com/wingio/LPM","github_raw":"","invite":""},"changelog":[{"title":"Grand Opening","items":["Thank you for downloading the first version of LPM"]}],"main":"index.js"};
+    const config = {"info":{"name":"Link Previewer for Messages","authors":[{"name":"Wing","discord_id":"298295889720770563","github_username":"wingio","twitter_username":"WingCanTalk"}],"version":"0.1.0","description":"Adds a preview for messages containging a message link","github":"https://github.com/wingio/LPM","github_raw":"https://raw.githubusercontent.com/wingio/LPM/main/LPM.plugin.js","invite":""},"changelog":[{"title":"New Things","items":["Made previews more message like"]}],"main":"index.js"};
 
     return !global.ZeresPluginLibrary ? class {
         constructor() {this._config = config;}
