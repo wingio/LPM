@@ -1,8 +1,11 @@
 /**
  * @name LPM
- * @authorLink https://twitter.com/WingCanTalk
- * @website https://wingio.xyz
- * @source https://github.com/wingio/LPM
+ * @invite undefined
+ * @authorLink undefined
+ * @donate undefined
+ * @patreon undefined
+ * @website https://github.com/wingio/LPM
+ * @source 
  */
 /*@cc_on
 @if (@_jscript)
@@ -29,7 +32,7 @@
 @else@*/
 
 module.exports = (() => {
-    const config = {"info":{"name":"Link Previewer for Messages","authors":[{"name":"Wing","discord_id":"298295889720770563","github_username":"wingio","twitter_username":"WingCanTalk"}],"version":"0.1.0","description":"Adds a preview for messages containging a message link","github":"","github_raw":"","invite":""},"changelog":[{"title":"Grand Opening","items":["Thank you for downloading the first version of LPM"]}],"main":"index.js"};
+    const config = {"info":{"name":"Link Previewer for Messages","authors":[{"name":"Wing","discord_id":"298295889720770563","github_username":"wingio","twitter_username":"WingCanTalk"}],"version":"0.1.0","description":"Adds a preview for messages containging a message link","github":"https://github.com/wingio/LPM","github_raw":"","invite":""},"changelog":[{"title":"Grand Opening","items":["Thank you for downloading the first version of LPM"]}],"main":"index.js"};
 
     return !global.ZeresPluginLibrary ? class {
         constructor() {this._config = config;}
@@ -62,32 +65,33 @@ module.exports = (() => {
         DiscordAPI
     } = Library;
 
-
+    const cache = []
 
     return class LPM extends Plugin {
         constructor() {
             super();
             this.defaultSettings = {};
+            this.defaultSettings.enableFormatting == true
         }
-        applyMarkdown(string) {
+        applyMarkdown(string, markdown = true) {
             var boldRegex = /\*\*[\s\S]+?\*\*/igm
             var italicsRegex = /\*[\s\S]+?\*/igm
             var codeRegex = /`[\s\S]+?`/igm
             var tortn = string
 
-            if (tortn.match(boldRegex)) {
+            if (tortn.match(boldRegex) && markdown) {
                 var toBold = tortn.match(boldRegex)
                 toBold.forEach(text => {
                     tortn = tortn.replace(text, `<b>${text.slice(2, -2)}</b>`)
                 })
             }
-            if (tortn.match(italicsRegex)) {
+            if (tortn.match(italicsRegex) && markdown) {
                 var toBold = tortn.match(italicsRegex)
                 toBold.forEach(text => {
                     tortn = tortn.replace(text, `<i>${text.slice(1, -1)}</i>`)
                 })
             }
-            if (tortn.match(codeRegex)) {
+            if (tortn.match(codeRegex) && markdown) {
                 var toBold = tortn.match(codeRegex)
                 toBold.forEach(text => {
                     tortn = tortn.replace(text, `<code class="inline" style="background: #181819;padding: 2px 2px 2px 2px;">${text.slice(1, -1)}</code>`)
@@ -98,8 +102,38 @@ module.exports = (() => {
             }
             return tortn
         }
+
+        toCalDate(timestamp){
+            var halfday = (12 * 60 * 60 * 1 * 1000)
+            var n = new Date(Date.now())
+            var t = new Date(timestamp)
+            var tortn = ''
+            if(Date.now() >= timestamp){
+                if(Date.now() - timestamp <= halfday && n.getDate() == t.getDate()){
+                    tortn = `Today at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                } else if(Date.now() - timestamp >= (halfday * 2) && n.getDate() - 1 == t.getDate()) {
+                    tortn = `Yesterday at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                } else if(Date.now() - timestamp >= (halfday * 2) && Date.now() - timestamp < (halfday * 14)) {
+                    tortn = `Last ${(t.getDay() == 0) ? 'Sunday' : (t.getDay() == 1) ? 'Monday' :(t.getDay() == 2) ? 'Tuesday' :(t.getDay() == 3) ? 'Wednesday' :(t.getDay() == 4) ? 'Thursday' : (t.getDay() == 5) ? 'Friday': 'Saturday'} at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                } else {
+                    tortn = `${t.getMonth() + 1}/${t.getDate()}/${t.getFullYear()} at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                }
+            } else if (Date.now() < timestamp){
+                if(timestamp - Date.now() <= halfday && n.getDate() == t.getDate()){
+                    tortn = `Today at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                } else if(timestamp - Date.now() >= (halfday * 2) && n.getDate() - 1 == t.getDate()) {
+                    tortn = `Tomorrow at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                } else if(timestamp - Date.now() >= (halfday * 2) && timestamp - Date.now() < (halfday * 14)) {
+                    tortn = `${(t.getDay() == 0) ? 'Sunday' : (t.getDay() == 1) ? 'Monday' :(t.getDay() == 2) ? 'Tuesday' :(t.getDay() == 3) ? 'Wednesday' :(t.getDay() == 4) ? 'Thursday' : (t.getDay() == 5) ? 'Friday': 'Saturday'} at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                } else {
+                    tortn = `${t.getMonth() + 1}/${t.getDate()}/${t.getFullYear()} at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                }
+            }
+            return tortn
+        }
+
         onStart() {
-            var cache = []
+            
             Toasts.show('LPM has started :)', {
                 type: 'success',
                 timeout: 6000
@@ -124,7 +158,33 @@ module.exports = (() => {
                                 var message = c.messages.find(m => m.id == path[2])
                                 if (message) {
                                     var content = this.applyMarkdown(message.content)
-                                    document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = '<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault" style="width: auto;"><h5 class="colorStandard-2KCXvj size14-e6ZScH h5-18_1nd title-3sZWYQ da-h5 da-title header-2BTCnc da-header">' + `Message sent by ${message.author.tag} in #${message.channel.name}` + '</h5><div class="content-2U5lSY da-content"><div class="icon-3o6xvg da-icon guildIconImage-3qTk45 guildIcon-lQ0uiM da-guildIconImage da-guildIcon iconSizeLarge-161qtT da-iconSizeLarge iconActiveLarge-2nzn9z da-iconActiveLarge" tabindex="0" role="button" style="background-image: url(&quot;' + message.author.avatarUrl + '&quot;); border-radius: 50%;"></div><div class="flex-1xMQg5 flex-1O1GKY da-flex da-flex vertical-V37hAW flex-1O1GKY directionColumn-35P_nr justifyCenter-3D2jYp alignStretch-DpGPf3 noWrap-3jynv6 guildInfo-1STtYi da-guildInfo" style="flex: 1 1 auto;"><div class="" role="button" tabindex="0"><h3 class="inviteDestinationJoined-3W7Gue inviteDestination-1fAcY7 da-inviteDestinationJoined da-inviteDestination base-1x0h_U da-base size16-1P40sf"><div class="guildNameWrapper-1RQYer da-guildNameWrapper"><span class="guildName-2hvnt_ da-guildName" style="overflow-wrap: break-word;overflow: visible;/* text-overflow: ellipsis; *//* flex-wrap: wrap; */font-size: 14px;font-weight: normal;flex: 0 0 auto;max-width: 520px;white-space: initial;">' + content + '</span></div></h3></div></div><button type="button" class="button-3To2tQ height20-mO2eIN da-button da-height20 button-38aScr da-button lookFilled-1Gx00P colorGreen-29iAKY buttonSize-DbrWhv da-buttonSize grow-q77ONN da-grow" style="align-self: auto;" ><div class="contents-18-Yxp da-contents">Jump</div></button></div></div>'
+                                    document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = `<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault"
+                                        style="width: auto;">
+                                        <h5 class="colorStandard-2KCXvj size14-e6ZScH h5-18_1nd title-3sZWYQ da-h5 da-title header-2BTCnc da-header">Message sent by ${message.author.tag} in #${message.channel.name}</h5>
+                                        <div class="content-2U5lSY da-content">
+                                            <div class="icon-3o6xvg da-icon guildIconImage-3qTk45 guildIcon-lQ0uiM da-guildIconImage da-guildIcon iconSizeLarge-161qtT da-iconSizeLarge iconActiveLarge-2nzn9z da-iconActiveLarge"
+                                                tabindex="0" role="button"
+                                                style="background-image: url(&quot;${message.author.avatarUrl}&quot;); border-radius: 50%;"></div>
+                                            <div class="flex-1xMQg5 flex-1O1GKY da-flex da-flex vertical-V37hAW flex-1O1GKY directionColumn-35P_nr justifyCenter-3D2jYp alignStretch-DpGPf3 noWrap-3jynv6 guildInfo-1STtYi da-guildInfo"
+                                                style="flex: 1 1 auto;">
+                                                <div id="lpm-authorsect" style="display: flex;align-items: baseline;">
+                                                    <h2 style="color: white;font-size: 1rem;margin-bottom: 2px;margin-top: 0px;line-height: 1.357rem;font-weight: 500;">${message.author.username}</h2>
+                                                    <h2 style="color: #a2a7af;font-size: 0.75rem;margin-bottom: 3px;margin-top: 0px;margin-left: 0.5rem;line-height: 1.357rem;">${this.toCalDate(message.timestamp)}</h2>
+                                                </div>
+                                                <div class="" role="button" tabindex="0">
+                                                    <h3
+                                                        class="inviteDestination-1fAcY7 da-inviteDestinationJoined da-inviteDestination base-1x0h_U da-base size16-1P40sf">
+                                                        <div class="guildNameWrapper-1RQYer da-guildNameWrapper"><span class="guildName-2hvnt_ da-guildName"
+                                                                style="overflow-wrap: break-word;overflow: visible;/* text-overflow: ellipsis; *//* flex-wrap: wrap; */font-size: 14px;font-weight: normal;flex: 0 0 auto;max-width: 520px;white-space: initial; color= #dcddde;">${content}</span></div>
+                                                    </h3>
+                                                </div>
+                                            </div><button type="button"
+                                                class="button-3To2tQ height20-mO2eIN da-button da-height20 button-38aScr da-button lookFilled-1Gx00P colorGreen-29iAKY buttonSize-DbrWhv da-buttonSize grow-q77ONN da-grow"
+                                                style="align-self: auto;">
+                                                <div class="contents-18-Yxp da-contents">Jump</div>
+                                            </button>
+                                        </div>
+                                    </div>`;
                                 }
                             }
                         }
@@ -149,16 +209,42 @@ module.exports = (() => {
                                     var message = c.messages.find(m => m.id == path[2])
 
                                     if (message && !cache.includes(message)) {
-                                        var content = this.applyMarkdown(message.content)
+                                        var content = this.applyMarkdown(message.content, this.settings.enableFormatting)
                                         cache.push(message)
-                                        document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = '<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault" style="width: auto;"><h5 class="colorStandard-2KCXvj size14-e6ZScH h5-18_1nd title-3sZWYQ da-h5 da-title header-2BTCnc da-header">' + `Message sent by ${message.author.tag} in #${message.channel.name}` + '</h5><div class="content-2U5lSY da-content"><div class="icon-3o6xvg da-icon guildIconImage-3qTk45 guildIcon-lQ0uiM da-guildIconImage da-guildIcon iconSizeLarge-161qtT da-iconSizeLarge iconActiveLarge-2nzn9z da-iconActiveLarge" tabindex="0" role="button" style="background-image: url(&quot;' + message.author.avatarUrl + '&quot;); border-radius: 50%;"></div><div class="flex-1xMQg5 flex-1O1GKY da-flex da-flex vertical-V37hAW flex-1O1GKY directionColumn-35P_nr justifyCenter-3D2jYp alignStretch-DpGPf3 noWrap-3jynv6 guildInfo-1STtYi da-guildInfo" style="flex: 1 1 auto;"><div class="" role="button" tabindex="0"><h3 class="inviteDestinationJoined-3W7Gue inviteDestination-1fAcY7 da-inviteDestinationJoined da-inviteDestination base-1x0h_U da-base size16-1P40sf"><div class="guildNameWrapper-1RQYer da-guildNameWrapper"><span class="guildName-2hvnt_ da-guildName" style="overflow-wrap: break-word;overflow: visible;/* text-overflow: ellipsis; *//* flex-wrap: wrap; */font-size: 14px;font-weight: normal;flex: 0 0 auto;max-width: 520px;white-space: initial;">' + content + '</span></div></h3></div></div><button type="button" class="button-3To2tQ height20-mO2eIN da-button da-height20 button-38aScr da-button lookFilled-1Gx00P colorGreen-29iAKY buttonSize-DbrWhv da-buttonSize grow-q77ONN da-grow" style="align-self: auto;" ><div class="contents-18-Yxp da-contents">Jump</div></button></div></div>'
+                                        document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = `<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault"
+                                        style="width: auto;">
+                                        <h5 class="colorStandard-2KCXvj size14-e6ZScH h5-18_1nd title-3sZWYQ da-h5 da-title header-2BTCnc da-header">Message sent by ${message.author.tag} in #${message.channel.name}</h5>
+                                        <div class="content-2U5lSY da-content">
+                                            <div class="icon-3o6xvg da-icon guildIconImage-3qTk45 guildIcon-lQ0uiM da-guildIconImage da-guildIcon iconSizeLarge-161qtT da-iconSizeLarge iconActiveLarge-2nzn9z da-iconActiveLarge"
+                                                tabindex="0" role="button"
+                                                style="background-image: url(&quot;${message.author.avatarUrl}&quot;); border-radius: 50%;"></div>
+                                            <div class="flex-1xMQg5 flex-1O1GKY da-flex da-flex vertical-V37hAW flex-1O1GKY directionColumn-35P_nr justifyCenter-3D2jYp alignStretch-DpGPf3 noWrap-3jynv6 guildInfo-1STtYi da-guildInfo"
+                                                style="flex: 1 1 auto;">
+                                                <div id="lpm-authorsect" style="display: flex;align-items: baseline;">
+                                                    <h2 style="color: white;font-size: 1rem;margin-bottom: 2px;margin-top: 0px;line-height: 1.357rem;font-weight: 500;">${message.author.username}</h2>
+                                                    <h2 style="color: #a2a7af;font-size: 0.75rem;margin-bottom: 3px;margin-top: 0px;margin-left: 0.5rem;line-height: 1.357rem;">${this.toCalDate(message.timestamp)}</h2>
+                                                </div>
+                                                <div class="" role="button" tabindex="0">
+                                                    <h3
+                                                        class="inviteDestination-1fAcY7 da-inviteDestinationJoined da-inviteDestination base-1x0h_U da-base size16-1P40sf">
+                                                        <div class="guildNameWrapper-1RQYer da-guildNameWrapper"><span class="guildName-2hvnt_ da-guildName"
+                                                                style="overflow-wrap: break-word;overflow: visible;/* text-overflow: ellipsis; *//* flex-wrap: wrap; */font-size: 14px;font-weight: normal;flex: 0 0 auto;max-width: 520px;white-space: initial; color= #dcddde;">${content}</span></div>
+                                                    </h3>
+                                                </div>
+                                            </div><button type="button"
+                                                class="button-3To2tQ height20-mO2eIN da-button da-height20 button-38aScr da-button lookFilled-1Gx00P colorGreen-29iAKY buttonSize-DbrWhv da-buttonSize grow-q77ONN da-grow"
+                                                style="align-self: auto;">
+                                                <div class="contents-18-Yxp da-contents">Jump</div>
+                                            </button>
+                                        </div>
+                                    </div>`;
                                     }
                                 }
                             }
                         })
                     }
                 })
-            }, 1000)
+            }, 10000)
         }
 
         onStop() {
@@ -166,7 +252,19 @@ module.exports = (() => {
             Patcher.unpatchAll();
         }
 
-        getSettingsPanel() {}
+        getSettingsPanel() {
+            return Settings.SettingPanel.build(this.saveSettings.bind(this),
+                new Settings.SettingGroup("Basic").append(
+                    new Settings.Switch("Enable formatting", "Use markdown syntax in message previews", this.settings.enableFormatting, (e) => {
+                        this.settings.enableFormatting = e;
+                    })
+                )
+            )
+        }
+
+        onLoad() {
+
+        }
 
         observer(e) {}
 
@@ -174,6 +272,59 @@ module.exports = (() => {
             console.log('message recieved')
         }
 
+        onSwitch() {
+            var ch = DiscordAPI.currentChannel
+            var urlRegex = /(http|https)[:][/][/](canary.)?discord(app)?[.]com[/]channels[/][0-9]*[/][0-9]*[/][0-9]*/igm;
+            ch.messages.forEach(msg => {
+                if (!msg.content) return
+                var links = msg.content.match(urlRegex)
+                if (links) {
+                    links.forEach(link => {
+                        var path = link.split('/channels/')[1].split('/')
+
+                        if (DiscordAPI.currentUser.guilds.find(g => g.id == path[0])) {
+                            var g = DiscordAPI.currentUser.guilds.find(g => g.id == path[0])
+                            var c = g.channels.find(ch => ch.id == path[1])
+                            if (c) {
+                                var message = c.messages.find(m => m.id == path[2])
+
+                                if (message && !cache.includes(message)) {
+                                    var content = this.applyMarkdown(message.content, this.settings.enableFormatting)
+                                    cache.push(message)
+                                    document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = `<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault"
+                                        style="width: auto;">
+                                        <h5 class="colorStandard-2KCXvj size14-e6ZScH h5-18_1nd title-3sZWYQ da-h5 da-title header-2BTCnc da-header">Message sent by ${message.author.tag} in #${message.channel.name}</h5>
+                                        <div class="content-2U5lSY da-content">
+                                            <div class="icon-3o6xvg da-icon guildIconImage-3qTk45 guildIcon-lQ0uiM da-guildIconImage da-guildIcon iconSizeLarge-161qtT da-iconSizeLarge iconActiveLarge-2nzn9z da-iconActiveLarge"
+                                                tabindex="0" role="button"
+                                                style="background-image: url(&quot;${message.author.avatarUrl}&quot;); border-radius: 50%;"></div>
+                                            <div class="flex-1xMQg5 flex-1O1GKY da-flex da-flex vertical-V37hAW flex-1O1GKY directionColumn-35P_nr justifyCenter-3D2jYp alignStretch-DpGPf3 noWrap-3jynv6 guildInfo-1STtYi da-guildInfo"
+                                                style="flex: 1 1 auto;">
+                                                <div id="lpm-authorsect" style="display: flex;align-items: baseline;">
+                                                    <h2 style="color: white;font-size: 1rem;margin-bottom: 2px;margin-top: 0px;line-height: 1.357rem;font-weight: 500;">${message.author.username}</h2>
+                                                    <h2 style="color: #a2a7af;font-size: 0.75rem;margin-bottom: 3px;margin-top: 0px;margin-left: 0.5rem;line-height: 1.357rem;">${this.toCalDate(message.timestamp)}</h2>
+                                                </div>
+                                                <div class="" role="button" tabindex="0">
+                                                    <h3
+                                                        class="inviteDestination-1fAcY7 da-inviteDestinationJoined da-inviteDestination base-1x0h_U da-base size16-1P40sf">
+                                                        <div class="guildNameWrapper-1RQYer da-guildNameWrapper"><span class="guildName-2hvnt_ da-guildName"
+                                                                style="overflow-wrap: break-word;overflow: visible;/* text-overflow: ellipsis; *//* flex-wrap: wrap; */font-size: 14px;font-weight: normal;flex: 0 0 auto;max-width: 520px;white-space: initial; color= #dcddde;">${content}</span></div>
+                                                    </h3>
+                                                </div>
+                                            </div><button type="button"
+                                                class="button-3To2tQ height20-mO2eIN da-button da-height20 button-38aScr da-button lookFilled-1Gx00P colorGreen-29iAKY buttonSize-DbrWhv da-buttonSize grow-q77ONN da-grow"
+                                                style="align-self: auto;">
+                                                <div class="contents-18-Yxp da-contents">Jump</div>
+                                            </button>
+                                        </div>
+                                    </div>`;
+                                }
+                            }
+                        }
+                    })
+                }
+            })
+        }
 
     };
 
