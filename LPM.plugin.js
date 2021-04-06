@@ -32,7 +32,7 @@
 @else@*/
 
 module.exports = (() => {
-    const config = {"info":{"name":"Link Previewer for Messages","authors":[{"name":"Wing","discord_id":"298295889720770563","github_username":"wingio","twitter_username":"WingCanTalk"}],"version":"0.1.3","description":"Adds a preview for messages containging a message link","github":"https://github.com/wingio/LPM","github_raw":"https://raw.githubusercontent.com/wingio/LPM/main/LPM.plugin.js","invite":""},"changelog":[{"title":"New Things","items":["Changed top text in preview"]}],"main":"index.js"};
+    const config = {"info":{"name":"Link Previewer for Messages","authors":[{"name":"Wing","discord_id":"298295889720770563","github_username":"wingio","twitter_username":"WingCanTalk"}],"version":"0.1.4","description":"Adds a preview for messages containging a message link","github":"https://github.com/wingio/LPM","github_raw":"https://raw.githubusercontent.com/wingio/LPM/main/LPM.plugin.js","invite":""},"changelog":[{"title":"New Things","items":["Added timestamp tooltip to previews"]}],"main":"index.js"};
 
     return !global.ZeresPluginLibrary ? class {
         constructor() {this._config = config;}
@@ -63,8 +63,11 @@ module.exports = (() => {
         Settings,
         Toasts,
         DiscordAPI,
-        ReactComponents,
-        DiscordModules
+        DOMTools,
+        Modals,
+        DiscordContextMenu,
+        ContextMenu,
+        Tooltip
     } = Library;
 
     const cache = []
@@ -76,7 +79,7 @@ module.exports = (() => {
             this.defaultSettings.enableFormatting == true
         }
 
-        generatePreviewElement(content, channelname, avatar, username, timestamp, guild) {
+        generatePreviewElement(content, channelname, avatar, username, timestamp, guild, path) {
             return `<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault"
                         style="width: auto;">
                             <h5 class="colorStandard-2KCXvj size14-e6ZScH h5-18_1nd title-3sZWYQ da-h5 da-title header-2BTCnc da-header">Message from #${channelname} in ${guild}</h5>
@@ -88,7 +91,7 @@ module.exports = (() => {
                                     style="flex: 1 1 auto;">
                                 <div id="lpm-authorsect" style="display: flex;align-items: baseline;">
                                     <h2 style="color: white;font-size: 1rem;margin-bottom: 2px;margin-top: 0px;line-height: 1.357rem;font-weight: 500;">${username}</h2>
-                                    <h2 style="color: #a2a7af;font-size: 0.75rem;margin-bottom: 3px;margin-top: 0px;margin-left: 0.5rem;line-height: 1.357rem;">${this.toCalDate(timestamp)}</h2>
+                                    <h2 style="color: #a2a7af;font-size: 0.75rem;margin-bottom: 3px;margin-top: 0px;margin-left: 0.5rem;line-height: 1.357rem;" id="lpmtimestamp` + timestamp + `">${this.toCalDate(timestamp)}</h2>
                                 </div>
                             <div class="" role="button" tabindex="0">
                                 <h3
@@ -97,10 +100,10 @@ module.exports = (() => {
                                     style="overflow-wrap: break-word;overflow: visible;/* text-overflow: ellipsis; *//* flex-wrap: wrap; */font-size: 14px;font-weight: normal;flex: 0 0 auto;max-width: 520px;white-space: initial; color: #dcddde;">${content}</span></div>
                                 </h3>
                             </div>
-                                </div><button type="button"
-                                    class="button-3To2tQ height20-mO2eIN da-button da-height20 button-38aScr da-button lookFilled-1Gx00P colorGreen-29iAKY buttonSize-DbrWhv da-buttonSize grow-q77ONN da-grow"
+                                </div><button id="jumpmsgbutton" type="button"
+                                    class="button-3To2tQ height20-mO2eIN da-button da-height20 button-38aScr da-button lookFilled-1Gx00P colorGreen-29iAKY buttonSize-DbrWhv da-buttonSize grow-q77ONN da-grow jumpmsgbtn"
                                     style="align-self: auto;">
-                                <div class="contents-18-Yxp da-contents">Jump</div>
+                                <div id="jumpmsgbutton" class="contents-18-Yxp da-contents">Jump</div>
                             </button>
                     </div>
             </div>`;
@@ -136,12 +139,13 @@ module.exports = (() => {
             return tortn
         }
 
-        toCalDate(timestamp) {
+        toCalDate(timestamp, options = {tooltip: false}) {
             var halfday = (12 * 60 * 60 * 1 * 1000)
             var n = new Date(Date.now())
             var t = new Date(timestamp)
             var tortn = ''
-            if (Date.now() >= timestamp) {
+            
+            if (Date.now() >= timestamp && options.tooltip == false) {
                 if (Date.now() - timestamp <= halfday && n.getDate() == t.getDate()) {
                     tortn = `Today at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
                 } else if (Date.now() - timestamp >= (halfday * 2) && n.getDate() - 1 == t.getDate()) {
@@ -149,9 +153,9 @@ module.exports = (() => {
                 } else if (Date.now() - timestamp >= (halfday * 2) && Date.now() - timestamp < (halfday * 14)) {
                     tortn = `Last ${(t.getDay() == 0) ? 'Sunday' : (t.getDay() == 1) ? 'Monday' :(t.getDay() == 2) ? 'Tuesday' :(t.getDay() == 3) ? 'Wednesday' :(t.getDay() == 4) ? 'Thursday' : (t.getDay() == 5) ? 'Friday': 'Saturday'} at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
                 } else {
-                    tortn = `${t.getMonth() + 1}/${t.getDate()}/${t.getFullYear()} at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
+                    tortn = `${t.getMonth() + 1}/${t.getDate()}/${t.getFullYear()}`
                 }
-            } else if (Date.now() < timestamp) {
+            } else if (Date.now() < timestamp && options.tooltip == false) {
                 if (timestamp - Date.now() <= halfday && n.getDate() == t.getDate()) {
                     tortn = `Today at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
                 } else if (timestamp - Date.now() >= (halfday * 2) && n.getDate() - 1 == t.getDate()) {
@@ -161,6 +165,9 @@ module.exports = (() => {
                 } else {
                     tortn = `${t.getMonth() + 1}/${t.getDate()}/${t.getFullYear()} at ${(t.getHours() - 12 < 1) ? t.getHours() : t.getHours() - 12}:${(t.getMinutes()) > 10 ? t.getMinutes() : `0${t.getMinutes()}`} ${(t.getHours() >= 12) ? 'PM' : 'AM'}`
                 }
+            } else if(options.tooltip){
+                var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric'};
+                tortn = new Intl.DateTimeFormat('en-US', options).format(t)
             }
             return tortn
         }
@@ -191,7 +198,8 @@ module.exports = (() => {
                                 if (message) {
                                     console.log(message)
                                     var content = this.applyMarkdown(message.content)
-                                    document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = this.generatePreviewElement(content, message.channel.name, message.author.avatarUrl, message.author.username, message.timestamp, (message.guild) ? message.guild.name : 'Unknown Guild')
+                                    document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = this.generatePreviewElement(content, message.channel.name, message.author.avatarUrl, message.author.username, message.timestamp, (message.guild) ? message.guild.name : 'Unknown Guild', path)
+                                    const tt = new Tooltip(document.getElementById('lpmtimestamp' + message.timestamp), this.toCalDate(message.timestamp, {tooltip: true}), {isTimestamp: true})
                                 } else {
                                     document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = `<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault"
                                         style="width: auto;">
@@ -217,6 +225,7 @@ module.exports = (() => {
             })
 
             setInterval(() => {
+                
                 var ch = DiscordAPI.currentChannel
                 var urlRegex = /(http|https)[:][/][/](canary.)?discord(app)?[.]com[/]channels[/][0-9]*[/][0-9]*[/][0-9]*/igm;
                 ch.messages.forEach(msg => {
@@ -235,7 +244,8 @@ module.exports = (() => {
                                     if (message && !cache.includes(message)) {
                                         var content = this.applyMarkdown(message.content, this.settings.enableFormatting)
                                         cache.push(message)
-                                        document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = this.generatePreviewElement(content, message.channel.name, message.author.avatarUrl, message.author.username, message.timestamp, (message.guild) ? message.guild.name : 'Unknown Guild')
+                                        document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = this.generatePreviewElement(content, message.channel.name, message.author.avatarUrl, message.author.username, message.timestamp, (message.guild) ? message.guild.name : 'Unknown Guild', path)
+                                        const tt = new Tooltip(document.getElementById('lpmtimestamp' + message.timestamp), this.toCalDate(message.timestamp, {tooltip: true}), {isTimestamp: true})
                                     }
                                 }
                             }
@@ -288,7 +298,8 @@ module.exports = (() => {
 
                                 if (message) {
                                     var content = this.applyMarkdown(message.content, this.settings.enableFormatting)
-                                    document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = this.generatePreviewElement(content, message.channel.name, message.author.avatarUrl, message.author.username, message.timestamp, (message.guild) ? message.guild.name : 'Unknown Guild')
+                                    document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = this.generatePreviewElement(content, message.channel.name, message.author.avatarUrl, message.author.username, message.timestamp, (message.guild) ? message.guild.name : 'Unknown Guild', path)
+                                    const tt = new Tooltip(document.getElementById('lpmtimestamp' + message.timestamp), this.toCalDate(message.timestamp, {tooltip: true}), {isTimestamp: true})
                                 } else {
                                     document.getElementById(`chat-messages-${msg.id}`).children[1].innerHTML = `<div class="wrapper-35wsBm userSelectNone-Iy6XEP cursorDefault-331ZcI da-wrapper da-userSelectNone da-cursorDefault"
                                         style="width: auto;">
